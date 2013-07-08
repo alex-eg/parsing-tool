@@ -1,4 +1,4 @@
-(in-package :parse-user)
+(in-package :user)
 
 (defstruct user
   name
@@ -7,7 +7,8 @@
   data-of-birth
   country
   city
-  interests)
+  interests
+  last-active)
   
 (defun get-value (elem)
   (stp:string-value (stp:next-sibling elem)))
