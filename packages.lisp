@@ -1,5 +1,5 @@
 (defpackage :tools
   (:use :cl))
 
-(defpackage :parse-user
+(defpackage :user
   (:use :cl :tools))

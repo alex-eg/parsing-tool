@@ -8,7 +8,7 @@
 (defsystem :beon-tools
   :components ((:file "packages")
 	       (:file "tools")
-	       (:file "parse-user"))
+	       (:file "user"))
   :depends-on (:closure-html
 	       :drakma
 	       :cl-sqlite
