@@ -1,5 +1,10 @@
 (defpackage :tools
-  (:use :cl))
+  (:use :cl)
+  (:export :make-diary-url
+	   :make-user-info-url
+	   :referer-query))  
 
 (defpackage :user
-  (:use :cl :tools))
+  (:use :cl :tools)
+  (:export :get-online-users
+	   :fill-user-info))
