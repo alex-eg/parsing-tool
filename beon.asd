@@ -11,6 +11,6 @@
 	       (:file "user"))
   :depends-on (:closure-html
 	       :drakma
-	       :cl-sqlite
+	       :sqlite
 	       :cxml-stp))
 		 
