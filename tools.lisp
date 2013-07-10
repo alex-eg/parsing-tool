@@ -1,5 +1,7 @@
 (in-package :tools)
 
+(defparameter *database*  (merge-pathnames *default-pathname-defaults* #P"./database.sqlite"))
+
 (defun make-diary-url (username)
   (concatenate 'string "http://" username ".beon.ru/"))
 
