@@ -80,14 +80,13 @@
 	(when (and (typep elem 'stp:element)
 		   (equal (stp:local-name elem) "a")
 		   (equal (stp:string-value elem) "Показать полный список"))
-;;	  (format t "ONLINE ~S~%~%" (extract-userlist elem)))))))
 	  (setf users (cons (extract-userlist elem) users))))
       users)))
 
 (defun initialize-database ()
   "Initialize database, create and/or validate schema"
-  (let ((db (sqlite:connect #P"./users.sqlite")))
-    (sqlite:execute-non-query 
+  (sqlite:with-open-database  (db *database*)
+    (sqlite:execute-single 
      db
      "CREATE TABLE IF NOT EXISTS users(name VARCHAR(255),
                                            date_created DATETIME,
@@ -97,6 +96,9 @@
                                            country VARCHAR(255),
                                            city VARCHAR(255),
                                            last_active DATETIME);")))
+    
+
+
 
                                                    
 
