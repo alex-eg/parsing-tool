@@ -80,25 +80,11 @@
 	(when (and (typep elem 'stp:element)
 		   (equal (stp:local-name elem) "a")
 		   (equal (stp:string-value elem) "Показать полный список"))
-	  (setf users (cons (extract-userlist elem) users))))
-      users)))
+	  (setf users (cons (subseq (extract-userlist elem) 0 10) users))))
+      users)))    
 
-(defun initialize-database ()
-  "Initialize database, create and/or validate schema"
-  (sqlite:with-open-database  (db *database*)
-    (sqlite:execute-single 
-     db
-     "CREATE TABLE IF NOT EXISTS users(name VARCHAR(255),
-                                           date_created DATETIME,
-                                           email VARCHAR(255),
-                                           date_of_birth VARCHAR(255),
-                                           gender TINYINT,
-                                           country VARCHAR(255),
-                                           city VARCHAR(255),
-                                           last_active DATETIME);")))
-    
-
-
+(defun store-user-in-database (user db)
+  
 
                                                    
 
