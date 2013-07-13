@@ -5,11 +5,15 @@
 	   :referer-query
 	   :*database*))  
 
+(defpackage :log
+  (:use :cl)
+  (:export :write-log))
+
 (defpackage :user
-  (:use :cl :tools)
+  (:use :cl :tools :log)
   (:export :get-online-users
 	   :fill-user-info))
 
 (defpackage :database
-  (:use :cl :tools :sqlite))
+  (:use :cl :tools :sqlite :log))
 

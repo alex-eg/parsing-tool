@@ -8,6 +8,7 @@
 (defsystem :beon-tools
   :components ((:file "packages")
 	       (:file "tools")
+	       (:file "log")
 	       (:file "database")
 	       (:file "user"))
   :depends-on (:closure-html
