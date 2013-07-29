@@ -161,11 +161,12 @@ used in recursive parsing process"
 				   (length online)
 				   (length offline)))
       (dolist (current-user (concatenate 'list online offline))
-	(log:write-log :info (format nil
-				     "Processing user ~A/~A" 
-				     progress
-				     total))
-	(store-user-in-database (fill-user-info current-user
-						base-url) db)
+	(let ((user-struct (fill-user-info current-user base-url)))
+	  (log:write-log :info (format nil
+				       "Processing user ~A ~A/~A" 
+				       (user-name user-struct)
+				       progress
+				       total))
+	  (store-user-in-database user-struct db))
 	(incf progress))))
   (log:write-log :info "Finished processing"))
