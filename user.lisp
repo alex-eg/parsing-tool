@@ -22,8 +22,10 @@
 (defun html-to-xml (html)
   (chtml:parse html (cxml-stp:make-builder)))
 
-(defmacro extract-user-info (element-name struct-name 
-			     name-field-pairs-list)
+(defmacro extract-user-info (element-name struct-name name-field-pairs-list)
+  "Helper macro that takes list of cons cells, which car is table entry name ~
+and cdr is structure field accessor function, and returns condition form to be ~
+used in recursive parsing process"
   (let ((cond-list '((t 'nil))))
     (dolist (current-pair name-field-pairs-list)
       (let ((key (car current-pair))
@@ -37,6 +39,7 @@
     `(cond ,@cond-list)))
 
 (defun parse-interests (interests)
+  "Helper function for parsing interest list"
   (labels ((real-parse-interests (int-str int-list)
 	     (if (position #\, int-str)
 		 (real-parse-interests
@@ -46,8 +49,8 @@
 		 (cons int-str int-list))))
     (real-parse-interests interests nil)))
 			
-
 (defun fill-user-info (username base-url)
+  "Creates fresh user structure, fetches and parses information and fills structure's fields"
   (let ((xml (html-to-xml (remove #\So (drakma:http-request
 			   (make-user-info-url username base-url)
 			   :user-agent :firefox))))
@@ -70,6 +73,7 @@
     current-user))
 
 (defun get-online-users (base-url)
+  "Gets cons cell, car of wich is list of currently online users, and cdr is of recently went offline ones"
   (flet ((extract-userlist (elem)
 	   (let* ((raw-script (stp:attribute-value elem "onclick"))
 		  (len (length raw-script))
@@ -83,7 +87,7 @@
 		 (let ((homepage (stp:attribute-value elem "href")))
 		   (setf usernames
 			 (if (string= (subseq homepage 7 15)
-				      (concatenate 'string base-url "/")
+				      (concatenate 'string base-url "/"))
 			     (cons (subseq homepage 21 (1- (length homepage)))
 				   usernames)
 			     (cons (subseq homepage 7 (position #\. homepage))
@@ -95,6 +99,8 @@
 	  (online nil)
 	  (offline nil))
       (stp:do-recursively (elem xml)
+	;;; Todo: process case when there is not enough users, so 
+	;;; link "Показать полный список" does not appear
 	(when (and (typep elem 'stp:element)
 		   (equal (stp:local-name elem) "a")
 		   (equal (stp:string-value elem) "Показать полный список"))
@@ -106,40 +112,41 @@
 (defun store-user-in-database (user db)
   (flet ((replace-quote (string)
 	   (tools:replace-all string #\' "''")))
-  (sqlite:execute-single 
-   db
-   (concatenate 'string 
-		"INSERT OR REPLACE INTO user(name, display_name, date_created, "
-		"date_of_birth, gender, country, city, last_active) "
-		"VALUES('"
-		(replace-quote (user-name user)) "', '"
-		(replace-quote (user-display-name user)) "', datetime('"
-		(user-date-created user) "'), "
-		(if (user-date-of-birth user)
-		    (concatenate 'string
-				 "datetime('" (user-date-of-birth user) "'),")
-		    "NULL,")
-		(or (and (string= (user-gender user) "Женский") "1")
-		    (and (string= (user-gender user) "Мужской") "2")
-		    "0") ", '"
-		(replace-quote (user-country user)) "', '"
-		(replace-quote (user-city user)) "', "
-		"datetime('now', 'localtime'));"))
-  (dolist (interest (user-interests user))
-    (sqlite:execute-single
-     db
-     (concatenate 'string
-		  "INSERT OR IGNORE INTO interest(name) "
-		  "VALUES('" (replace-quote interest) "');"))
-    (sqlite:execute-single
+    (sqlite:execute-single 
      db
      (concatenate 'string 
-		  "INSERT OR REPLACE INTO interests_users_map("
-		  "user_name, interest_name) VALUES('"
+		  "INSERT OR REPLACE INTO user(name, display_name, date_created, "
+		  "date_of_birth, gender, country, city, last_active) "
+		  "VALUES('"
 		  (replace-quote (user-name user)) "', '"
-		  (replace-quote interest) "');")))))
+		  (replace-quote (user-display-name user)) "', datetime('"
+		  (user-date-created user) "'), "
+		  (if (user-date-of-birth user)
+		      (concatenate 'string
+				   "datetime('" (user-date-of-birth user) "'),")
+		      "NULL,")
+		  (or (and (string= (user-gender user) "Женский") "1")
+		      (and (string= (user-gender user) "Мужской") "2")
+		      "0") ", '"
+		      (replace-quote (user-country user)) "', '"
+		      (replace-quote (user-city user)) "', "
+		      "datetime('now', 'localtime'));"))
+    (dolist (interest (user-interests user))
+      (sqlite:execute-single
+       db
+       (concatenate 'string
+		    "INSERT OR IGNORE INTO interest(name) "
+		    "VALUES('" (replace-quote interest) "');"))
+      (sqlite:execute-single
+       db
+       (concatenate 'string 
+		    "INSERT OR REPLACE INTO interests_users_map("
+		    "user_name, interest_name) VALUES('"
+		    (replace-quote (user-name user)) "', '"
+		    (replace-quote interest) "');")))))
 
 (defun capture (base-url)
+  "Main entry point. Automated script that registers recent actvity and stores information about users"
   (database:initialize-database)
   (log:write-log :info "Initialized database")
   (sqlite:with-open-database (db tools:*database-path*)
