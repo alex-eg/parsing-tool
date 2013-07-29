@@ -2,14 +2,14 @@
 
 (defstruct user
   name
+  display-name
   date-created
   email
   date-of-birth
   gender
   interests
   country
-  city
-  last-active)
+  city)
   
 (defun get-user-info-field-value (key-elem)
   (stp:string-value (stp:next-sibling key-elem)))
@@ -29,21 +29,32 @@
       (let ((key (car current-pair))
 	    (field-accessor (cdr current-pair)))
 	(setf cond-list (cons `((table-keyp ,element-name ,key)
-				(setf (,field-accessor ,struct-name)
-				      (get-user-info-field-value ,element-name)))
+				(handler-case 
+				    (setf (,field-accessor ,struct-name)
+					  (get-user-info-field-value ,element-name))
+				  (stp:stp-error () nil)))
 			      cond-list))))
     `(cond ,@cond-list)))
 
+(defun parse-interests (interests)
+  (labels ((real-parse-interests (int-str int-list)
+	     (if (position #\, int-str)
+		 (real-parse-interests
+		  (subseq int-str (+ 2 (position #\, int-str)))
+		  (cons (subseq int-str 0 (position #\, int-str))
+			int-list))
+		 (cons int-str int-list))))
+    (real-parse-interests interests nil)))
+			
 
-
-(defun fill-user-info (username)
-  (let ((xml (html-to-xml (drakma:http-request
-			   (make-user-info-url username)
-			   :user-agent :firefox)))
+(defun fill-user-info (username base-url)
+  (let ((xml (html-to-xml (remove #\So (drakma:http-request
+			   (make-user-info-url username base-url)
+			   :user-agent :firefox))))
 	(current-user (make-user)))
     (stp:do-recursively (elem xml)
       (extract-user-info elem current-user
-			 (("Имя" . user-name)
+			 (("Имя" . user-display-name)
 			  ("Дата создания" . user-date-created)
 			  ("Адрес электронной почты  " . user-email)
 			  ("Дата рождения" . user-date-of-birth)
@@ -51,9 +62,14 @@
 			  ("Интересы" . user-interests)
 			  ("Страна" . user-country)
 			  ("Город" . user-city))))
+    (setf (user-name current-user) username)
+    (setf (user-email current-user)
+	  (remove #\SOFT_HYPHEN (user-email current-user)))
+    (setf (user-interests current-user)
+	  (parse-interests (user-interests current-user)))
     current-user))
 
-(defun get-online-users ()
+(defun get-online-users (base-url)
   (flet ((extract-userlist (elem)
 	   (let* ((raw-script (stp:attribute-value elem "onclick"))
 		  (len (length raw-script))
@@ -66,26 +82,82 @@
 			  (equal (stp:attribute-value elem "class") "user"))
 		 (let ((homepage (stp:attribute-value elem "href")))
 		   (setf usernames
-			 (if (string= (subseq homepage 7 15) "beon.ru/")
+			 (if (string= (subseq homepage 7 15)
+				      (concatenate 'string base-url "/")
 			     (cons (subseq homepage 21 (1- (length homepage)))
 				   usernames)
 			     (cons (subseq homepage 7 (position #\. homepage))
 				   usernames))))))
 	     usernames)))
     (let ((xml (html-to-xml (drakma:http-request
-			     "http://beon.ru/online/"
+			     (concatenate 'string "http://" base-url "/online/")
 			     :user-agent :firefox)))
-	  (users nil))
+	  (online nil)
+	  (offline nil))
       (stp:do-recursively (elem xml)
 	(when (and (typep elem 'stp:element)
 		   (equal (stp:local-name elem) "a")
 		   (equal (stp:string-value elem) "Показать полный список"))
-	  (setf users (cons (subseq (extract-userlist elem) 0 10) users))))
-      users)))    
+	  (if (null online)
+	      (setf online (extract-userlist elem))
+	      (setf offline (extract-userlist elem)))))
+      (cons online offline))))
 
 (defun store-user-in-database (user db)
-  
+  (flet ((replace-quote (string)
+	   (tools:replace-all string #\' "''")))
+  (sqlite:execute-single 
+   db
+   (concatenate 'string 
+		"INSERT OR REPLACE INTO user(name, display_name, date_created, "
+		"date_of_birth, gender, country, city, last_active) "
+		"VALUES('"
+		(replace-quote (user-name user)) "', '"
+		(replace-quote (user-display-name user)) "', datetime('"
+		(user-date-created user) "'), "
+		(if (user-date-of-birth user)
+		    (concatenate 'string
+				 "datetime('" (user-date-of-birth user) "'),")
+		    "NULL,")
+		(or (and (string= (user-gender user) "Женский") "1")
+		    (and (string= (user-gender user) "Мужской") "2")
+		    "0") ", '"
+		(replace-quote (user-country user)) "', '"
+		(replace-quote (user-city user)) "', "
+		"datetime('now', 'localtime'));"))
+  (dolist (interest (user-interests user))
+    (sqlite:execute-single
+     db
+     (concatenate 'string
+		  "INSERT OR IGNORE INTO interest(name) "
+		  "VALUES('" (replace-quote interest) "');"))
+    (sqlite:execute-single
+     db
+     (concatenate 'string 
+		  "INSERT OR REPLACE INTO interests_users_map("
+		  "user_name, interest_name) VALUES('"
+		  (replace-quote (user-name user)) "', '"
+		  (replace-quote interest) "');")))))
 
-                                                   
-
-
+(defun capture (base-url)
+  (database:initialize-database)
+  (log:write-log :info "Initialized database")
+  (sqlite:with-open-database (db tools:*database-path*)
+    (log:write-log :info "Attached to the database")
+    (let* ((users (get-online-users base-url))
+	   (online (car users))
+	   (offline (cdr users))
+	   (total (+ (length online)
+		     (length offline)))
+	   (progress 1))
+      (log:write-log :info (format nil "Got users: ~A online, ~A just went offline"
+				   (length online)
+				   (length offline)))
+      (dolist (current-user (concatenate 'list online offline))
+	(log:write-log :info (format nil
+				     "Processing user ~A/~A" 
+				     progress
+				     total))
+	(store-user-in-database (fill-user-info current-user) db)
+	(incf progress))))
+  (log:write-log :info "Finished processing"))
