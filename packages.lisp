@@ -3,7 +3,8 @@
   (:export :make-diary-url
 	   :make-user-info-url
 	   :referer-query
-	   :*database*))  
+	   :replace-all 
+	   :*database-path*))  
 
 (defpackage :log
   (:use :cl)
@@ -11,9 +12,11 @@
 
 (defpackage :user
   (:use :cl :tools :log)
-  (:export :get-online-users
-	   :fill-user-info))
+  (:export :capture
+	   :get-online-users))
+	   
 
 (defpackage :database
-  (:use :cl :tools :sqlite :log))
+  (:use :cl :tools :sqlite :log)
+  (:export :initialize-database))
 
