@@ -4,5 +4,5 @@ Parsing tool
 Requires sbcl.
 Usage: 
 
-       $ start.lisp example.com
+       $ ./start.lisp example.com
 
