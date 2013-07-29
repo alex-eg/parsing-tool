@@ -11,7 +11,14 @@
 (with-open-file (*standard-output* "/dev/null" :direction :output
                                    :if-exists :supersede)
   (asdf:operate 'asdf:load-op 'parsing-tools))
+
+(unless (> (length sb-ext:*posix-argv*) 1)
+  (write-line "Too few arguments")
+  (write-line "Usage: ./start.lisp example.com")
+  (quit))
+
 (handler-case
     (user:capture (cadr sb-ext:*posix-argv*))
   (SB-SYS:INTERACTIVE-INTERRUPT ()
-    (write-line "User interrupt, exitting")))
+    (write-line "User interrupt, exitting")
+    (quit)))
