@@ -165,6 +165,7 @@ used in recursive parsing process"
 				     "Processing user ~A/~A" 
 				     progress
 				     total))
-	(store-user-in-database (fill-user-info current-user) db)
+	(store-user-in-database (fill-user-info current-user
+						base-url) db)
 	(incf progress))))
   (log:write-log :info "Finished processing"))
