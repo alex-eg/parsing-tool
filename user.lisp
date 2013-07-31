@@ -51,9 +51,11 @@ used in recursive parsing process"
 			
 (defun fill-user-info (username base-url)
   "Creates fresh user structure, fetches and parses information and fills structure's fields"
-  (let ((xml (html-to-xml (remove #\So (drakma:http-request
-			   (make-user-info-url username base-url)
-			   :user-agent :firefox))))
+  (let ((xml (html-to-xml (delete-every 
+			   '(#\So #\Bel) 
+			   (drakma:http-request
+			    (make-user-info-url username base-url)
+			    :user-agent :firefox))))
 	(current-user (make-user)))
     (stp:do-recursively (elem xml)
       (extract-user-info elem current-user

@@ -4,6 +4,7 @@
 	   :make-user-info-url
 	   :referer-query
 	   :replace-all 
+	   :delete-every
 	   :*database-path*))  
 
 (defpackage :log

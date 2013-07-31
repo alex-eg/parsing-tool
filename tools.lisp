@@ -21,3 +21,9 @@
 	(if (char-equal c char)
 	    (write-string replacement-string out)
 	    (write-char c out))))))
+
+(defun delete-every (char-list string)
+  (let ((clean-string ""))
+  (dolist (c char-list)
+    (setf clean-string (delete c string)))
+  clean-string))
