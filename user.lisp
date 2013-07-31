@@ -153,27 +153,52 @@ used in recursive parsing process"
 		    (replace-quote (user-name user)) "', '"
 		    (replace-quote interest) "');")))))
 
+(defun gather-user-info (user-list base-url)
+  (sqlite:with-open-database (db tools:+database-path+
+				 :busy-timeout 10000)
+    (log:write-log :info "Attached to the database")
+    (let ((progress 1)
+	  (total (list-length user-list)))
+      (dolist (current-user user-list)
+	(log:write-log :info (format nil
+				     "Thread ~S processing user ~A ~A/~A" 
+				     (sb-thread:thread-name sb-thread:*current-thread*)
+				     current-user
+				     progress
+				     total))
+	(store-user-in-database (fill-user-info current-user base-url) db)
+	(incf progress)))))
+
 (defun capture (base-url)
   "Main entry point. Automated script that registers recent actvity and stores information about users"
   (database:initialize-database)
   (log:write-log :info "Initialized database")
-  (sqlite:with-open-database (db tools:*database-path*)
-    (log:write-log :info "Attached to the database")
-    (let* ((users (get-online-users base-url))
-	   (online (car users))
-	   (offline (cdr users))
-	   (total (+ (length online)
-		     (length offline)))
-	   (progress 1))
-      (log:write-log :info (format nil "Got users: ~A online, ~A just went offline"
-				   (length online)
-				   (length offline)))
-      (dolist (current-user (concatenate 'list online offline))
-	(log:write-log :info (format nil
-				       "Processing user ~A ~A/~A" 
-				       current-user
-				       progress
-				       total))
-	(store-user-in-database (fill-user-info current-user base-url) db)
-	(incf progress))))
-  (log:write-log :info "Finished processing"))
+  (let* ((users (get-online-users base-url))
+	 (online (car users))
+	 (offline (cdr users))
+	 (user-list (concatenate 'list online offline))
+	 (chunk-length (floor (list-length user-list)
+			      tools:+thread-number+)))
+    (log:write-log :info (format nil "Got users: ~A online, ~A just went offline"
+				 (list-length online)
+				 (list-length offline)))
+    (log:write-log :info (format nil "Spawning ~A threads" tools:+thread-number+))
+    (dotimes (i tools:+thread-number+)
+      (sb-thread:make-thread 
+       (lambda (user-list base-url output-stream)
+	 (let ((self (sb-thread:thread-name sb-thread:*current-thread*))
+	       (*standard-output* output-stream))
+	   (log:write-log :info 
+			  (format nil "Thread ~A started" self))
+	   (gather-user-info user-list base-url)
+	   (log:write-log :info 
+			  (format nil "Finished gathering, thread ~A exitting" self))
+	   (sb-thread:return-from-thread nil)))
+       :name (format nil "worker-thread-~A" i)
+       :arguments (list (subseq user-list (* i chunk-length)
+				(if (= i (1- tools:+thread-number+))
+				    (list-length user-list)
+				    (* (1+ i) chunk-length)))
+			base-url
+			*standard-output*)))
+    (log:write-log :info "Finished spawning threads")))
