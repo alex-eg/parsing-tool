@@ -23,6 +23,12 @@ name VARCHAR(1024) UNIQUE NOT NULL PRIMARY KEY,
 real_name VARCHAR(1024));") ;; Real id - for things like l33t and leet and different spellings of same word
     (sqlite:execute-single
      db
+     "CREATE TABLE IF NOT EXISTS activity(
+user_name VARCHAR(512),
+time DATETIME,
+PRIMARY_KEY(user_name, time));")
+    (sqlite:execute-single
+     db
      "CREATE TABLE IF NOT EXISTS interests_users_map(
 user_name VARCHAR(512),
 interest_name VARCHAR(1024),

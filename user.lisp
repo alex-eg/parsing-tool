@@ -142,6 +142,12 @@ used in recursive parsing process"
       (sqlite:execute-single
        db
        (concatenate 'string 
+		    "INSERT INTO activity(user_name, time) "
+		    "VALUES('" (replace-quote (user-name user)) "', "
+		    "datetime('now', 'localtime'));"))
+      (sqlite:execute-single
+       db
+       (concatenate 'string 
 		    "INSERT OR REPLACE INTO interests_users_map("
 		    "user_name, interest_name) VALUES('"
 		    (replace-quote (user-name user)) "', '"
