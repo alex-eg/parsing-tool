@@ -26,7 +26,6 @@ real_name VARCHAR(1024));") ;; Real id - for things like l33t and leet and diffe
      "CREATE TABLE IF NOT EXISTS activity(
 user_name VARCHAR(512),
 time DATETIME,
-PRIMARY KEY(user_name, time),
 FOREIGN KEY (user_name) REFERENCES user(name));")
     (sqlite:execute-single
      db
