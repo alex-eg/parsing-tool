@@ -5,7 +5,7 @@
 	   :referer-query
 	   :replace-all 
 	   :delete-every
-	   :*database-path*))  
+	   :+database-path+))  
 
 (defpackage :log
   (:use :cl)
