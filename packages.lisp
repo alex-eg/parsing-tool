@@ -5,8 +5,7 @@
 	   :referer-query
 	   :replace-all 
 	   :delete-every
-	   :+database-path+
-	   :+thread-number+))  
+	   :+database-path+))  
 
 (defpackage :log
   (:use :cl)
