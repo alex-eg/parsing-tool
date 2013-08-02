@@ -52,7 +52,7 @@ used in recursive parsing process"
 (defun fill-user-info (username base-url)
   "Creates fresh user structure, fetches and parses information and fills structure's fields"
   (let ((xml (html-to-xml (delete-every 
-			   '(#\So #\Bel) 
+			   '(#\So #\Bel #\Dc4 #\Nak #\Vt)
 			   (drakma:http-request
 			    (make-user-info-url username base-url)
 			    :user-agent :firefox))))
