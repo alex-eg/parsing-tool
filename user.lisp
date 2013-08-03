@@ -157,7 +157,7 @@ used in recursive parsing process"
   "Main entry point. Automated script that registers recent actvity and stores information about users"
   (database:initialize-database)
   (log:write-log :info "Initialized database")
-  (sqlite:with-open-database (db tools:+database-path+)
+  (sqlite:with-open-database (db tools:*database-path*)
     (log:write-log :info "Attached to the database")
     (let* ((users (get-online-users base-url))
 	   (online (car users))

@@ -3,7 +3,7 @@
 (defun initialize-database ()
   "Initialize database, create and/or validate schema"
   (write-log :info "Initializing database...")
-  (sqlite:with-open-database  (db +database-path+)
+  (sqlite:with-open-database  (db *database-path*)
     (sqlite:execute-single 
      db
      "CREATE TABLE IF NOT EXISTS user(

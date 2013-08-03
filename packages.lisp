@@ -6,7 +6,7 @@
 	   :replace-all 
 	   :delete-every
 	   :format-date
-	   :+database-path+))  
+	   :*database-path*))  
 
 (defpackage :log
   (:use :cl)

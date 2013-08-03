@@ -1,6 +1,6 @@
 (in-package :tools)
 
-(defconstant +database-path+  (merge-pathnames *default-pathname-defaults* #P"./database.sqlite"))
+(defparameter *database-path*  (merge-pathnames *default-pathname-defaults* #P"./database.sqlite"))
 
 (defun make-diary-url (username base-url)
   (concatenate 'string "http://" username "." base-url "/"))
