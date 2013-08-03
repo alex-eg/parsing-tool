@@ -48,3 +48,14 @@
 		hours
 		minutes
 		seconds)))))
+
+(defun sqlite-select (select)
+  (sqlite:with-open-database (db *database-path*)
+    (sqlite:execute-to-list db select)))
+
+(defun sqlite-select-to-str (request &optional (key #'car))
+  "Performs sqlite request and iterates over response list, collecting #'keys of each element into a string"
+    (with-output-to-string (str)
+      (dolist (c (sqlite-select request))
+	(prin1 (funcall key c))
+	(write-char #\,))))
