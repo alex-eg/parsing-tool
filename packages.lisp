@@ -5,6 +5,7 @@
 	   :referer-query
 	   :replace-all 
 	   :delete-every
+	   :format-date
 	   :+database-path+))  
 
 (defpackage :log

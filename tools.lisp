@@ -27,3 +27,24 @@
   (dolist (c char-list)
     (setf clean-string (delete c string)))
   clean-string))
+
+(defun format-date ()
+  (macrolet ((format-2-digits (name)
+	       `(if (= (mod ,name 10) ,name)
+		    (format nil "0~A" ,name)
+		    (format nil "~A" ,name))))
+    (multiple-value-bind (raw-seconds raw-minutes raw-hours
+				      raw-day raw-month year)
+	(get-decoded-time)
+      (let ((seconds (format-2-digits raw-seconds))
+	    (minutes (format-2-digits raw-minutes))
+	    (hours (format-2-digits raw-hours))
+	    (day (format-2-digits raw-day))
+	    (month (format-2-digits raw-month)))
+	(format nil "~A-~A-~A ~A:~A:~A"
+		day
+		month
+		year
+		hours
+		minutes
+		seconds)))))
