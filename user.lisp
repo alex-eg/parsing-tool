@@ -111,7 +111,7 @@ used in recursive parsing process"
 	      (setf offline (extract-userlist elem)))))
       (cons online offline))))
 
-(defun store-user-in-database (user db)
+(defun store-user-in-database (user db datetime)
   (flet ((replace-quote (string)
 	   (tools:replace-all string #\' "''")))
     (sqlite:execute-single 
@@ -132,7 +132,7 @@ used in recursive parsing process"
 		      "0") ", '"
 		      (replace-quote (user-country user)) "', '"
 		      (replace-quote (user-city user)) "', "
-		      "datetime('now', 'localtime'));"))
+		      "datetime('" datetime "'));"))
     (dolist (interest (user-interests user))
       (sqlite:execute-single
        db
@@ -164,7 +164,8 @@ used in recursive parsing process"
 	   (offline (cdr users))
 	   (total (+ (length online)
 		     (length offline)))
-	   (progress 1))
+	   (progress 1)
+	   (datetime-now (tools:format-date)))
       (log:write-log :info (format nil "Got users: ~A online, ~A just went offline"
 				   (length online)
 				   (length offline)))
@@ -174,6 +175,7 @@ used in recursive parsing process"
 				       current-user
 				       progress
 				       total))
-	(store-user-in-database (fill-user-info current-user base-url) db)
+	(store-user-in-database (fill-user-info current-user base-url) 
+				db datetime-now)
 	(incf progress))))
   (log:write-log :info "Finished processing"))
