@@ -57,7 +57,7 @@
   "Performs sqlite request and iterates over response list, collecting #'keys of each element into a string"
   (with-output-to-string (str)
     (dolist (c (sqlite-select request))
-      (prin1 (funcall key c) str)
+      (princ (funcall key c) str)
       (write-char #\, str))))
 
 
