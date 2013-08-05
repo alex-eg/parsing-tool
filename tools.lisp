@@ -53,9 +53,13 @@
   (sqlite:with-open-database (db *database-path*)
     (sqlite:execute-to-list db select)))
 
-(defun sqlite-select-to-str (request &optional (key #'car))
+(defun sqlite-select-to-str (request &key (key #'identity))
   "Performs sqlite request and iterates over response list, collecting #'keys of each element into a string"
-    (with-output-to-string (str)
-      (dolist (c (sqlite-select request))
-	(prin1 (funcall key c))
-	(write-char #\,))))
+  (with-output-to-string (str)
+    (dolist (c (sqlite-select request))
+      (prin1 (funcall key c) str)
+      (write-char #\, str))))
+
+
+      
+    
