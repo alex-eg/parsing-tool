@@ -29,10 +29,17 @@ time DATETIME,
 FOREIGN KEY (user_name) REFERENCES user(name));")
     (sqlite:execute-single
      db
+     "CREATE TABLE IF NOT EXISTS community(
+name VARCHAR(512) UNIQUE NOT NULL PRIMARY KEY,
+display_name VARCHAR(512),
+date_created DATETIME,
+last_active DATETIME);")
+    (sqlite:execute-single
+     db
      "CREATE TABLE IF NOT EXISTS interests_users_map(
 user_name VARCHAR(512),
 interest_name VARCHAR(1024),
-FOREIGN KEY (user_name) REFERENCES user(name) ON UPDATE CASCADE ON DELETE CASCADE,
+FOREIGN KEY (user_name) REFERENCES user(name),
 FOREIGN KEY (interest_name) REFERENCES interest(name));")))
   
 		      
