@@ -6,6 +6,7 @@
 	   :replace-all 
 	   :delete-every
 	   :format-date
+	   :sqlite-select
 	   :sqlite-select-to-str
 	   :*database-path*))  
 
