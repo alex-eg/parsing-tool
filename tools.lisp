@@ -60,6 +60,13 @@
       (princ (funcall key c) str)
       (write-char #\, str))))
 
-
+(defun backup-database ()
+  (let ((file (merge-pathnames 
+	       (directory-namestring *database-path*) 
+	       (concatenate 'string (file-namestring *database-path*) ".backup"))))
+    (log:write-log :info (format nil "Backing up database ~A" (file-namestring file)))
+    (sb-ext:run-program "cp" (list (namestring *database-path*)
+				   (namestring file)))))
+	
       
     
