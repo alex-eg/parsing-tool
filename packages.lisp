@@ -17,6 +17,7 @@
 (defpackage :user
   (:use :cl :tools :log)
   (:export :capture
+	   :get-and-store-online
 	   :get-online-users))
 	   
 

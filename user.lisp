@@ -179,3 +179,23 @@ used in recursive parsing process"
 				db datetime-now)
 	(incf progress))))
   (log:write-log :info "Finished processing"))
+
+(defun store-online-offline-in-database (online offline db)
+  (sqlite:execute-single 
+   db 
+   (concatenate 'string 
+		"INSERT INTO site_online_magnitude(when, online, offline)"
+		" VALUES(datetime('now','localtime'), "
+		(write-to-string online) ", "
+		(write-to-string offline) ");")))
+
+(defun get-and-store-online (base-url)
+  (let* ((users (get-online-users base-url))
+	 (online (length (car users)))
+	 (offline (length (cdr users))))
+    (log:write-log :info (format nil "Got ~A online ~A offline users"
+				 online offline))
+    (sqlite:with-open-database (db tools:*database-path*)
+      (store-online-offline-in-database online offline db))
+    (log:write-log :info "Successfully stored activity information in the database")))
+  
