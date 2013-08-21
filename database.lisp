@@ -44,7 +44,7 @@ FOREIGN KEY (interest_name) REFERENCES interest(name));")
     (sqlite:execute-single
      db
      "CREATE TABLE IF NOT EXISTS site_online_magnitude(
-when DATETIME UNIQUE NOT NULL PRIMARY KEY,
+datetime DATETIME UNIQUE NOT NULL PRIMARY KEY,
 online SMALLINT,
 offline SMALLINT);")))
   
