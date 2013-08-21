@@ -6,6 +6,7 @@
 (in-package :parsing-tools-asd)
 
 (defsystem :parsing-tools
+  :encoding :utf-8
   :components ((:file "packages")
 	       (:file "tools")
 	       (:file "log")
