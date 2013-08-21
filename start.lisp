@@ -14,11 +14,17 @@
 
 (unless (> (length sb-ext:*posix-argv*) 1)
   (write-line "Too few arguments")
-  (write-line "Usage: ./start.lisp example.com")
+  (write-line "Usage: start.lisp example.com")
+  (wirte-line "       start.lisp --store-online example.com")
   (quit))
 
 (handler-case
-    (user:capture (cadr sb-ext:*posix-argv*))
+    (cond ((member "--store-online" sb-ext:*posix-argv*)
+	   (user:get-online-users (nth (1+ (position "--store-online" 
+						     sb-ext:*posix-argv*))
+				       sb-ext:*posix-argv*)))
+	  (t
+	   (user:capture (cadr sb-ext:*posix-argv*))))
   (SB-SYS:INTERACTIVE-INTERRUPT ()
     (write-line "User interrupt, exitting")
     (quit)))
