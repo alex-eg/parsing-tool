@@ -22,10 +22,10 @@
     (cond ((member "--store-online" sb-ext:*posix-argv*
 		   :test #'string=)
 	   (log:write-log :info "Capturing activity info...")
-	   (user:get-online-users (nth (1+ (position "--store-online" 
-						     sb-ext:*posix-argv*
-						     :test #'string=))
-				       sb-ext:*posix-argv*)))
+	   (user:get-and-store-online (nth (1+ (position "--store-online" 
+							 sb-ext:*posix-argv*
+							 :test #'string=))
+					   sb-ext:*posix-argv*)))
 	  (t
 	   (user:capture (cadr sb-ext:*posix-argv*))))
   (SB-SYS:INTERACTIVE-INTERRUPT ()
