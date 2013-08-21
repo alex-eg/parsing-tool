@@ -184,7 +184,7 @@ used in recursive parsing process"
   (sqlite:execute-single 
    db 
    (concatenate 'string 
-		"INSERT INTO site_online_magnitude(when, online, offline)"
+		"INSERT INTO site_online_magnitude(datetime, online, offline)"
 		" VALUES(datetime('now','localtime'), "
 		(write-to-string online) ", "
 		(write-to-string offline) ");")))
@@ -193,7 +193,7 @@ used in recursive parsing process"
   (let* ((users (get-online-users base-url))
 	 (online (length (car users)))
 	 (offline (length (cdr users))))
-    (log:write-log :info (format nil "Got ~A online ~A offline users"
+    (log:write-log :info (format nil "Got ~A online and ~A offline users"
 				 online offline))
     (sqlite:with-open-database (db tools:*database-path*)
       (store-online-offline-in-database online offline db))
