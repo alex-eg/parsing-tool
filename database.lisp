@@ -1,7 +1,7 @@
 (in-package :database)
 
 (defun initialize-database ()
-n  "Initialize database, create and/or validate schema"
+  "Initialize database, create and/or validate schema"
   (write-log :info "Initializing database...")
   (sqlite:with-open-database  (db *database-path*)
     (sqlite:execute-single 
