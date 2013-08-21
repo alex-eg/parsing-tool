@@ -20,6 +20,7 @@
 
 (handler-case
     (cond ((member "--store-online" sb-ext:*posix-argv*)
+	   (log:write-log :info "Capturing activity info...")
 	   (user:get-online-users (nth (1+ (position "--store-online" 
 						     sb-ext:*posix-argv*))
 				       sb-ext:*posix-argv*)))
