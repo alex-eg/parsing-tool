@@ -1,7 +1,7 @@
 (in-package :database)
 
 (defun initialize-database ()
-  "Initialize database, create and/or validate schema"
+n  "Initialize database, create and/or validate schema"
   (write-log :info "Initializing database...")
   (sqlite:with-open-database  (db *database-path*)
     (sqlite:execute-single 
@@ -40,6 +40,12 @@ last_active DATETIME);")
 user_name VARCHAR(512),
 interest_name VARCHAR(1024),
 FOREIGN KEY (user_name) REFERENCES user(name),
-FOREIGN KEY (interest_name) REFERENCES interest(name));")))
+FOREIGN KEY (interest_name) REFERENCES interest(name));")
+    (sqlite:execute-single
+     db
+     "CREATE TABLE IF NOT EXISTS site_online_magnitude(
+when DATETIME UNIQUE NOT NULL PRIMARY KEY,
+online SMALLINT,
+offline SMALLINT);")))
   
 		      
