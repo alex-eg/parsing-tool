@@ -23,7 +23,8 @@
 		   :test #'string=)
 	   (log:write-log :info "Capturing activity info...")
 	   (user:get-online-users (nth (1+ (position "--store-online" 
-						     sb-ext:*posix-argv*))
+						     sb-ext:*posix-argv*
+						     :test #'string=))
 				       sb-ext:*posix-argv*)))
 	  (t
 	   (user:capture (cadr sb-ext:*posix-argv*))))
