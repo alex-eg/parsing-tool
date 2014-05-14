@@ -182,7 +182,7 @@ used in recursive parsing process"
 
 (defun store-online-offline-in-database (online offline db)
   (sqlite:execute-single 
-   db 
+   db
    (concatenate 'string 
 		"INSERT INTO site_online_magnitude(datetime, online, offline)"
 		" VALUES(datetime('now','localtime'), "
@@ -198,4 +198,3 @@ used in recursive parsing process"
     (sqlite:with-open-database (db tools:*database-path*)
       (store-online-offline-in-database online offline db))
     (log:write-log :info "Successfully stored activity information in the database")))
-  

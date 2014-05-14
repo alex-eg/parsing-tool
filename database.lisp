@@ -47,5 +47,3 @@ FOREIGN KEY (interest_name) REFERENCES interest(name));")
 datetime DATETIME UNIQUE NOT NULL PRIMARY KEY,
 online SMALLINT,
 offline SMALLINT);")))
-  
-		      
