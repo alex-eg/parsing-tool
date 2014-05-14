@@ -15,7 +15,7 @@
 (unless (> (length sb-ext:*posix-argv*) 1)
   (write-line "Too few arguments")
   (write-line "Usage: start.lisp example.com")
-  (wirte-line "       start.lisp --store-online example.com")
+  (write-line "       start.lisp --store-online example.com")
   (quit))
 
 (handler-case
