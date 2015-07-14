@@ -1,4 +1,4 @@
-(in-package :log)
+(in-package :parsing-tool)
 
 (defparameter *logfile* '*standard-output*)
 (defparameter *loglevel* :debug)

@@ -1,4 +1,4 @@
-(in-package :database)
+(in-package :parsing-tool)
 
 (defun initialize-database ()
   "Initialize database, create and/or validate schema"
