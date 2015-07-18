@@ -1,16 +1,5 @@
 (in-package :parsing-tool)
 
-(defstruct user
-  name
-  display-name
-  date-created
-  email
-  date-of-birth
-  gender
-  interests
-  country
-  city)
-  
 (defun get-user-info-field-value (key-elem)
   (stp:string-value (stp:next-sibling key-elem)))
 
@@ -22,17 +11,17 @@
 (defun html-to-xml (html)
   (chtml:parse html (cxml-stp:make-builder)))
 
-(defmacro extract-user-info (element-name struct-name name-field-pairs-list)
-  "Helper macro that takes list of cons cells, which car is table entry name ~
-and cdr is structure field accessor function, and returns condition form to be ~
+(defmacro extract-user-info (element-name object-name name-field-pairs-list)
+  "Helper macro that takes list of cons cells, which car is table entry name
+and cdr is structure field accessor function, and returns condition form to be
 used in recursive parsing process"
   (let ((cond-list '((t 'nil))))
     (dolist (current-pair name-field-pairs-list)
       (let ((key (car current-pair))
-	    (field-accessor (cdr current-pair)))
+	    (slot-accessor (cdr current-pair)))
 	(setf cond-list (cons `((table-keyp ,element-name ,key)
 				(handler-case 
-				    (setf (,field-accessor ,struct-name)
+				    (setf (,slot-accessor ,object-name)
 					  (get-user-info-field-value ,element-name))
 				  (stp:stp-error () nil)))
 			      cond-list))))
@@ -52,13 +41,13 @@ used in recursive parsing process"
 (defun fill-user-info (username base-url)
   "Creates fresh user structure, fetches and parses information and fills structure's fields"
   (let ((xml (html-to-xml (delete-every 
-			   '(#\So #\Bel #\Dc4 #\Nak #\Vt) 
+			   '(#\So #\Bel #\Dc4 #\Nak #\Vt #\Etx #\Nul #\Soh)
 			   (drakma:http-request
 			    (make-user-info-url username base-url)
 			    :user-agent :firefox))))
-	(current-user (make-user)))
+        (user (make-instance 'user :name username)))
     (stp:do-recursively (elem xml)
-      (extract-user-info elem current-user
+      (extract-user-info elem user
 			 (("Имя" . user-display-name)
 			  ("Дата создания" . user-date-created)
 			  ("Адрес электронной почты  " . user-email)
@@ -67,12 +56,14 @@ used in recursive parsing process"
 			  ("Интересы" . user-interests)
 			  ("Страна" . user-country)
 			  ("Город" . user-city))))
-    (setf (user-name current-user) username)
-    (setf (user-email current-user)
-	  (remove #\SOFT_HYPHEN (user-email current-user)))
-    (setf (user-interests current-user)
-	  (parse-interests (user-interests current-user)))
-    current-user))
+    (setf (user-email user)
+	  (remove #\SOFT_HYPHEN (user-email user)))
+    (setf (user-interests user)
+	  (parse-interests (user-interests user)))
+    (unless (eql :null (user-date-of-birth user))
+      (setf (user-date-of-birth user)
+            (parse-date (user-date-of-birth user))))
+    user))
 
 (defun get-online-users (base-url)
   "Gets cons cell, car of wich is list of currently online users, and cdr is of recently went offline ones"
@@ -111,90 +102,60 @@ used in recursive parsing process"
 	      (setf offline (extract-userlist elem)))))
       (cons online offline))))
 
-(defun store-user-in-database (user db datetime)
+(defun store-user-in-database (user)
   (flet ((replace-quote (string)
-	   (tools:replace-all string #\' "''")))
-    (sqlite:execute-single 
-     db
-     (concatenate 'string 
-		  "INSERT OR REPLACE INTO user(name, display_name, date_created, "
-		  "date_of_birth, gender, country, city, last_active) "
-		  "VALUES('"
-		  (replace-quote (user-name user)) "', '"
-		  (replace-quote (user-display-name user)) "', datetime('"
-		  (user-date-created user) "'), "
-		  (if (user-date-of-birth user)
-		      (concatenate 'string
-				   "datetime('" (user-date-of-birth user) "'),")
-		      "NULL,")
-		  (or (and (string= (user-gender user) "Женский") "1")
-		      (and (string= (user-gender user) "Мужской") "2")
-		      "0") ", '"
-		      (replace-quote (user-country user)) "', '"
-		      (replace-quote (user-city user)) "', "
-		      "datetime('" datetime "'));"))
-    (dolist (interest (user-interests user))
-      (sqlite:execute-single
-       db
-       (concatenate 'string
-		    "INSERT OR IGNORE INTO interest(name) "
-		    "VALUES('" (replace-quote interest) "');"))
-      (sqlite:execute-single
-       db
-       (concatenate 'string 
-		    "INSERT INTO activity(user_name, time) "
-		    "VALUES('" (replace-quote (user-name user)) "', "
-		    "datetime('now', 'localtime'));"))
-      (sqlite:execute-single
-       db
-       (concatenate 'string 
-		    "INSERT OR REPLACE INTO interests_users_map("
-		    "user_name, interest_name) VALUES('"
-		    (replace-quote (user-name user)) "', '"
-		    (replace-quote interest) "');")))))
+	   (replace-all string #\' "''")))
+    (with-slots (last-active gender) user
+      (setf last-active (universal-time-to-timestamp (get-universal-time)))
+      (setf gender (or (and (string= (user-gender user) "Женский") 1)
+                       (and (string= (user-gender user) "Мужской") 2)
+                       0)))
+    (upsert-dao user)
+    (dolist (interest-name (user-interests user))
+      (unless (null interest-name)
+        (let ((interest-name-normalized (normalize-interest-name interest-name)))
+          (when (null (select-dao 'interest (:= 'name interest-name-normalized)))
+            (let ((interest (make-instance 'interest :name interest-name-normalized)))
+              (insert-dao interest)))
+          (when (null (select-dao 'user-interest-map (:and (:= 'user-name (user-name user))
+                                                           (:= 'interest-name interest-name-normalized))))
+            (let ((interest-user (make-instance 'user-interest-map
+                                                :user-name (user-name user)
+                                                :interest-name interest-name-normalized)))
+              (insert-dao interest-user))))))
+    (let ((activity (make-instance 'activity
+                                   :user-name (user-name user)
+                                   :time (universal-time-to-timestamp (get-universal-time)))))
+      (upsert-dao activity))))
 
-(defun capture (base-url)
+(defun capture (base-url db-name username password host)
   "Main entry point. Automated script that registers recent actvity and stores information about users"
-  (database:initialize-database)
-  (log:write-log :info "Initialized database")
-  (sqlite:with-open-database (db tools:*database-path*)
-    (log:write-log :info "Attached to the database")
-    (let* ((users (get-online-users base-url))
-	   (online (car users))
-	   (offline (cdr users))
-	   (total (+ (length online)
-		     (length offline)))
-	   (progress 1)
-	   (datetime-now (tools:format-date)))
-      (log:write-log :info (format nil "Got users: ~A online, ~A just went offline"
-				   (length online)
-				   (length offline)))
-      (dolist (current-user (concatenate 'list online offline))
-	(log:write-log :info (format nil
-				       "Processing user ~A ~A/~A" 
-				       current-user
-				       progress
-				       total))
-	(store-user-in-database (fill-user-info current-user base-url) 
-				db datetime-now)
-	(incf progress))))
-  (log:write-log :info "Finished processing"))
+  (unwind-protect
+       (progn
+         (initialize-database db-name username password host)
+         (write-log :info "Initialized database")
+         (let* ((users (get-online-users base-url))
+                (online (car users))
+                (offline (cdr users))
+                (total (+ (length online)
+                          (length offline)))
+                (progress 1))
+           (write-log :info (format nil "Got users: ~A online, ~A just went offline"
+                                    (length online)
+                                    (length offline)))
+           (dolist (current-user (concatenate 'list online offline))
+             (write-log :info (format nil
+                                      "Processing user ~A ~A/~A"
+                                      current-user
+                                      progress
+                                      total))
+             (store-user-in-database (fill-user-info current-user base-url) )
+             (incf progress)))
+         (write-log :info "Finished processing"))
+    (disconnect-toplevel)))
 
 (defun store-online-offline-in-database (online offline db)
-  (sqlite:execute-single 
-   db
-   (concatenate 'string 
-		"INSERT INTO site_online_magnitude(datetime, online, offline)"
-		" VALUES(datetime('now','localtime'), "
-		(write-to-string online) ", "
-		(write-to-string offline) ");")))
+  nil)
 
 (defun get-and-store-online (base-url)
-  (let* ((users (get-online-users base-url))
-	 (online (length (car users)))
-	 (offline (length (cdr users))))
-    (log:write-log :info (format nil "Got ~A online and ~A offline users"
-				 online offline))
-    (sqlite:with-open-database (db tools:*database-path*)
-      (store-online-offline-in-database online offline db))
-    (log:write-log :info "Successfully stored activity information in the database")))
+  (write-log :info "Successfully stored activity information in the database"))
