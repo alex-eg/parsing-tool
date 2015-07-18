@@ -1,4 +1,6 @@
 (defpackage :parsing-tool
-  (:use :cl :postmodern)
+  (:use :cl :postmodern
+        :simple-date
+        :split-sequence)
   (:export :capture
-           :get-and-store-online)
+           :get-and-store-online))
