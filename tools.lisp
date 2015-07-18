@@ -28,6 +28,12 @@
       (setf clean-string (delete c clean-string)))
     clean-string))
 
+(defun parse-date (date)
+  (destructuring-bind (year month day)
+      (split-sequence #\- date)
+    (encode-timestamp (read-from-string year)
+                      (read-from-string month)
+                      (read-from-string day))))
 
 (defun format-date ()
   (macrolet ((format-2-digits (name)
