@@ -23,10 +23,11 @@
 	    (write-char c out))))))
 
 (defun delete-every (char-list string)
-  (let ((clean-string ""))
-  (dolist (c char-list)
-    (setf clean-string (delete c string)))
-  clean-string))
+  (let ((clean-string string))
+    (dolist (c char-list)
+      (setf clean-string (delete c clean-string)))
+    clean-string))
+
 
 (defun format-date ()
   (macrolet ((format-2-digits (name)
