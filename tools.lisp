@@ -56,3 +56,5 @@
 		minutes
 		seconds)))))
 
+(defun normalize-interest-name (name)
+  (string-downcase (delete-every '(#\. #\, #\! #\; #\:) name)))
