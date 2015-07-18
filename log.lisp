@@ -11,7 +11,7 @@
     (if (>= (position level log-levels)
 	    current-level)
 	`(format ,*logfile* "[~A] [~A] ~A~%" 
-		 (tools:format-date)
+		 (format-date)
 		 (symbol-name ,level) ,message))))
 
 	
