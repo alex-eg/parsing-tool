@@ -56,24 +56,3 @@
 		minutes
 		seconds)))))
 
-(defun sqlite-select (select)
-  (sqlite:with-open-database (db *database-path*)
-    (sqlite:execute-to-list db select)))
-
-(defun sqlite-select-to-str (request &key (key #'identity))
-  "Performs sqlite request and iterates over response list, collecting #'keys of each element into a string"
-  (with-output-to-string (str)
-    (dolist (c (sqlite-select request))
-      (princ (funcall key c) str)
-      (write-char #\, str))))
-
-(defun backup-database ()
-  (let ((file (merge-pathnames 
-	       (directory-namestring *database-path*) 
-	       (concatenate 'string (file-namestring *database-path*) ".backup"))))
-    (log:write-log :info (format nil "Backing up database ~A" (file-namestring file)))
-    (sb-ext:run-program "cp" (list (namestring *database-path*)
-				   (namestring file)))))
-	
-      
-    
