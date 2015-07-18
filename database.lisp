@@ -1,49 +1,25 @@
 (in-package :parsing-tool)
 
-(defun initialize-database ()
+(defun initialize-database (db-name username password host)
   "Initialize database, create and/or validate schema"
   (write-log :info "Initializing database...")
-  (sqlite:with-open-database  (db *database-path*)
-    (sqlite:execute-single 
-     db
-     "CREATE TABLE IF NOT EXISTS user(
-name VARCHAR(512) UNIQUE NOT NULL PRIMARY KEY,
-display_name VARCHAR(512), 
-date_created DATETIME,
-email VARCHAR(255),
-date_of_birth VARCHAR(255),
-gender TINYINT,
-country VARCHAR(255),
-city VARCHAR(255),
-last_active DATETIME);")
-    (sqlite:execute-single
-     db
-     "CREATE TABLE IF NOT EXISTS interest(
-name VARCHAR(1024) UNIQUE NOT NULL PRIMARY KEY,
-real_name VARCHAR(1024));") ;; Real id - for things like l33t and leet and different spellings of same word
-    (sqlite:execute-single
-     db
-     "CREATE TABLE IF NOT EXISTS activity(
-user_name VARCHAR(512),
-time DATETIME,
-FOREIGN KEY (user_name) REFERENCES user(name));")
-    (sqlite:execute-single
-     db
-     "CREATE TABLE IF NOT EXISTS community(
-name VARCHAR(512) UNIQUE NOT NULL PRIMARY KEY,
-display_name VARCHAR(512),
-date_created DATETIME,
-last_active DATETIME);")
-    (sqlite:execute-single
-     db
-     "CREATE TABLE IF NOT EXISTS interests_users_map(
-user_name VARCHAR(512),
-interest_name VARCHAR(1024),
-FOREIGN KEY (user_name) REFERENCES user(name),
-FOREIGN KEY (interest_name) REFERENCES interest(name));")
-    (sqlite:execute-single
-     db
-     "CREATE TABLE IF NOT EXISTS site_online_magnitude(
-datetime DATETIME UNIQUE NOT NULL PRIMARY KEY,
-online SMALLINT,
-offline SMALLINT);")))
+  (connect-toplevel db-name username password host)
+  (deftable user
+    (!dao-def))
+  (deftable interest
+    (!dao-def))
+  (deftable activity
+    (!dao-def)
+    (!foreign 'users 'user-name 'name))
+  (deftable community
+    (!dao-def))
+  (deftable user-interest-map
+    (!dao-def)
+    (!foreign 'users 'user-name 'name)
+    (!foreign 'interests 'interest-name 'name))
+  (deftable site-online-log
+    (!dao-def))
+
+  (dolist (dao-class (list 'user 'interest 'activity 'community 'user-interest-map 'site-online-log))
+    (unless (table-exists-p (dao-table-name dao-class))
+      (create-table dao-class))))
