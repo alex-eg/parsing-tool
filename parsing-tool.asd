@@ -14,6 +14,7 @@
 	       (:file "database")
 	       (:file "user"))
   :depends-on (:closure-html
+               :uiop
                :command-line-arguments
                :split-sequence
 	       :drakma
