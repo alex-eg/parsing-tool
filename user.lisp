@@ -149,8 +149,17 @@ used in recursive parsing process"
       (incf progress)))
   (write-log :info "Finished processing"))
 
-(defun store-online-offline-in-database (online offline db)
-  nil)
+(defun store-online-offline-in-database (online offline)
+  (let ((entry (make-instance 'site-online-log
+                              :time (universal-time-to-timestamp (get-universal-time))
+                              :online online
+                              :offline offline)))
+    (insert-dao entry)))
 
 (defun get-and-store-online (base-url)
-  (write-log :info "Successfully stored activity information in the database"))
+  (let* ((users (get-online-users base-url))
+         (online (length (car users)))
+         (offline (length (cdr users))))
+    (write-log :info (format nil "Got ~A online and ~A offline users" online offline))
+    (store-online-offline-in-database online offline)
+    (write-log :info "Successfully stored activity information in the database")))
