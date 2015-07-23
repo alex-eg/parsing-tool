@@ -4,4 +4,5 @@
         :split-sequence
         :command-line-arguments)
   (:export :capture
-           :get-and-store-online))
+           :get-and-store-online
+           :initialize-database))
