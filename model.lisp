@@ -43,8 +43,8 @@
   (:metaclass dao-class))
 
 (defclass site-online-log ()
-  ((time    :col-type timestamp)
-   (online  :col-type integer)
-   (offline :col-type integer))
+  ((time    :col-type timestamp :initarg :time)
+   (online  :col-type integer   :initarg :online)
+   (offline :col-type integer   :initarg :offline))
   (:metaclass dao-class)
   (:keys time))
