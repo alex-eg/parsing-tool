@@ -1,33 +1,27 @@
-#!/usr/bin/sbcl --script 
-(unless (equalp (lisp-implementation-type)
-		"SBCL")
-  (write-line "Sorry, currently SBCL is required to operate this script")
-  (quit))
+(in-package :parsing-tool)
 
-(load #P"/etc/sbclrc")
-(load (merge-pathnames (user-homedir-pathname) #P"/.sbclrc"))
+(defparameter +option-spec+
+  '((("base-url" #\s) :type string)
+    (("store-online") :type boolean :optional t)))
 
-(load #P"parser.asd")
-(with-open-file (*standard-output* "/dev/null" :direction :output
-                                   :if-exists :supersede)
-  (asdf:operate 'asdf:load-op 'parsing-tools))
+(defun main (args)
+  (handle-command-line
+   +option-spec+
+   'process
+   :command-line args
+   :name "parsing-tool"
+   :rest-arity nil))
 
-(unless (> (length sb-ext:*posix-argv*) 1)
-  (write-line "Too few arguments")
-  (write-line "Usage: start.lisp example.com")
-  (write-line "       start.lisp --store-online example.com")
-  (quit))
-
-(handler-case
-    (cond ((member "--store-online" sb-ext:*posix-argv*
-		   :test #'string=)
-	   (log:write-log :info "Capturing activity info...")
-	   (user:get-and-store-online (nth (1+ (position "--store-online" 
-							 sb-ext:*posix-argv*
-							 :test #'string=))
-					   sb-ext:*posix-argv*)))
-	  (t
-	   (user:capture (cadr sb-ext:*posix-argv*))))
-  (SB-SYS:INTERACTIVE-INTERRUPT ()
-    (write-line "User interrupt, exitting")
-    (quit)))
+(defun process (&key base-url store-online)
+  (let ((username (cdr (assoc 'username *db-credentials*)))
+        (db-name  (cdr (assoc 'db-name  *db-credentials*)))
+        (password (cdr (assoc 'password *db-credentials*)))
+        (host     (cdr (assoc 'host     *db-credentials*))))
+    (unwind-protect
+         (progn
+           (initialize-database db-name username password host)
+           (write-log :info "Initialized database")
+           (if store-online
+               (get-and-store-online base-url)
+               (capture base-url)))
+      (disconnect-toplevel))))
