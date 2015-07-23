@@ -128,31 +128,26 @@ used in recursive parsing process"
                                    :time (universal-time-to-timestamp (get-universal-time)))))
       (upsert-dao activity))))
 
-(defun capture (base-url db-name username password host)
+(defun capture (base-url)
   "Main entry point. Automated script that registers recent actvity and stores information about users"
-  (unwind-protect
-       (progn
-         (initialize-database db-name username password host)
-         (write-log :info "Initialized database")
-         (let* ((users (get-online-users base-url))
-                (online (car users))
-                (offline (cdr users))
-                (total (+ (length online)
-                          (length offline)))
-                (progress 1))
-           (write-log :info (format nil "Got users: ~A online, ~A just went offline"
-                                    (length online)
-                                    (length offline)))
-           (dolist (current-user (concatenate 'list online offline))
-             (write-log :info (format nil
-                                      "Processing user ~A ~A/~A"
-                                      current-user
-                                      progress
-                                      total))
-             (store-user-in-database (fill-user-info current-user base-url) )
-             (incf progress)))
-         (write-log :info "Finished processing"))
-    (disconnect-toplevel)))
+  (let* ((users (get-online-users base-url))
+         (online (car users))
+         (offline (cdr users))
+         (total (+ (length online)
+                   (length offline)))
+         (progress 1))
+    (write-log :info (format nil "Got users: ~A online, ~A just went offline"
+                             (length online)
+                             (length offline)))
+    (dolist (current-user (concatenate 'list online offline))
+      (write-log :info (format nil
+                               "Processing user ~A ~A/~A"
+                               current-user
+                               progress
+                               total))
+      (store-user-in-database (fill-user-info current-user base-url))
+      (incf progress)))
+  (write-log :info "Finished processing"))
 
 (defun store-online-offline-in-database (online offline db)
   nil)
