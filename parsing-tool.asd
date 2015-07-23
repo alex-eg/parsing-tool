@@ -12,6 +12,8 @@
 	       (:file "log")
                (:file "model")
 	       (:file "database")
+               (:file "start")
+               (:file "credentials")
 	       (:file "user"))
   :depends-on (:closure-html
                :uiop
